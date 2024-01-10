@@ -1,6 +1,8 @@
 
 
+using Basket.API.GrpcServices;
 using Basket.API.Repositories;
+using Discount.Grpc.Protos;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 
@@ -23,7 +25,7 @@ namespace Basket.API
             builder.Services.AddSwaggerGen();
 
             InjectRedis(builder.Services, config);
-            InjectDependencies(builder.Services);
+            InjectDependencies(builder.Services, config);
 
             var app = builder.Build();
 
@@ -42,9 +44,15 @@ namespace Basket.API
             app.Run();
         }
 
-        private static void InjectDependencies(IServiceCollection services)
+        private static void InjectDependencies(IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped<IBasketRepository, BasketRepository>();
+            services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(opt =>
+            {
+                opt.Address = new Uri(configuration.GetValue<string>("GrpcSettings:DiscountUrl"));
+            });
+            services.AddScoped<DiscountGrpcService>();
+
         }
 
         private static void InjectRedis(IServiceCollection services, IConfiguration configuration)
